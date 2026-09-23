@@ -1,0 +1,10 @@
+# /etc/caddy/Caddyfile  (linux/caddy-setup.sh 가 자동 생성)
+ai.company.local {
+    tls internal
+    reverse_proxy 127.0.0.1:3000
+}
+
+api.company.local {
+    tls internal
+    reverse_proxy 127.0.0.1:4000
+}

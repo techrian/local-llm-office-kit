@@ -1,0 +1,67 @@
+# Open WebUI + LiteLLM (+ 선택: vLLM) 통합 구성
+#   준비: docker network create ai-net ; cp .env.example .env (키 수정)
+#   시작: docker compose up -d        업데이트: docker compose pull && docker compose up -d
+#   vLLM 포함: docker compose --profile vllm up -d
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: always
+    ports:
+      - "127.0.0.1:3000:8080"          # 서버 내부 전용 (Caddy로 HTTPS 공개)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - WEBUI_NAME=${WEBUI_NAME:-우리회사 AI}
+    volumes:
+      - open-webui:/app/backend/data
+    networks: [ai-net]
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: litellm
+    restart: always
+    ports:
+      - "127.0.0.1:4000:4000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file: .env
+    volumes:
+      - ./litellm-config.yaml:/app/config.yaml:ro
+    command: ["--config", "/app/config.yaml"]
+    networks: [ai-net]
+
+  vllm:
+    profiles: ["vllm"]
+    image: vllm/vllm-openai:latest
+    container_name: vllm
+    restart: always
+    ipc: host
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ${HF_CACHE:-/data/hf-cache}:/root/.cache/huggingface
+    command:
+      - --model=${VLLM_MODEL:-Qwen/Qwen3-30B-A3B-Instruct-2507-FP8}
+      - --tensor-parallel-size=${VLLM_TP:-2}
+      - --max-model-len=32768
+      - --gpu-memory-utilization=0.90
+      - --served-model-name=company-ai
+      - --api-key=${VLLM_KEY}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks: [ai-net]
+
+volumes:
+  open-webui:
+    external: true      # install.sh 가 만든 볼륨 재사용 (없으면: docker volume create open-webui)
+
+networks:
+  ai-net:
+    external: true

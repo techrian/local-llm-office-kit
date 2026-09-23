@@ -1,0 +1,27 @@
+# LiteLLM : 사내 AI 단일 관문 (모델은 바뀌어도 주소는 그대로)
+model_list:
+  # Ollama 모델 (기본)
+  - model_name: company-ai-small
+    litellm_params:
+      model: ollama_chat/gpt-oss:20b
+      api_base: http://host.docker.internal:11434
+
+  # vLLM 모델 (docker compose --profile vllm 사용 시 주석 해제)
+  # - model_name: company-ai
+  #   litellm_params:
+  #     model: hosted_vllm/company-ai
+  #     api_base: http://vllm:8000/v1
+  #     api_key: os.environ/VLLM_KEY
+
+  # 상용 API (사내 자료 입력 금지 용도로만)
+  # - model_name: external-ai
+  #   litellm_params:
+  #     model: openai/<계약한-모델명>
+  #     api_key: os.environ/OPENAI_API_KEY
+
+# router_settings:
+#   fallbacks:
+#     - company-ai: ["company-ai-small"]
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
