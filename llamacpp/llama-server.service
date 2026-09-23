@@ -1,0 +1,28 @@
+# /etc/systemd/system/llama-server.service
+#   sudo cp llama-server.service /etc/systemd/system/ && sudo nano /etc/systemd/system/llama-server.service
+#   (User, 경로, MODEL, API_KEY 수정)  →  sudo systemctl daemon-reload && sudo systemctl enable --now llama-server
+#   로그: journalctl -u llama-server -f
+[Unit]
+Description=llama.cpp server (Qwen3.8-27B Q8, 256K, 2-GPU tensor split)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=iot
+Environment="BIN=/home/iot/llm/llama.cpp/build/bin/llama-server"
+Environment="MODEL=/home/iot/llm/gguf/qwen3.8/Qwen3.8-27B-UD-Q8_K_XL.gguf"
+Environment="GPUS=0,1"
+Environment="TS=23,28"
+Environment="CTX=262144"
+# LiteLLM/Open WebUI 컨테이너에서 접속하려면 0.0.0.0 + API_KEY + ufw(도커 대역만 8080 허용)
+Environment="HOST=127.0.0.1"
+Environment="PORT=8080"
+Environment="API_KEY=change-me"
+ExecStart=/usr/bin/env bash /home/iot/local-llm-office-kit/llamacpp/run-server.sh
+Restart=on-failure
+RestartSec=10
+LimitMEMLOCK=infinity
+
+[Install]
+WantedBy=multi-user.target
